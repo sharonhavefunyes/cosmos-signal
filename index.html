@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>宇宙信号</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+
+    <div class="theme-switcher">
+      <button class="theme-toggle" id="themeToggle">
+        <span class="theme-icon" id="themeIcon">🌌</span>
+        <span id="themeText">宇宙</span>
+      </button>
+    </div>
+    
+    <main class="app">
+      <header class="app__header">
+        <h1 class="app__title">宇宙信号接收站</h1>
+      </header>
+
+      <section id="cardSection" class="card-section" aria-live="polite">
+        <div class="stack">
+          <div class="stack__top">
+            <button id="receiveBtn" class="btn btn-primary">接收宇宙信号</button>
+          </div>
+          <div class="stack__center">
+            <div class="card" id="signalCard">
+              <div class="card__content">
+                <div class="card__main" id="cardMain">你可以试着……</div>
+                <div class="card__sub" id="cardSub">或许，这就是今天的信号</div>
+                <div class="card__from" id="cardFrom">来自宇宙</div>
+              </div>
+            </div>
+          </div>
+          <div class="stack__bottom">
+            <div class="actions">
+              <button id="againBtn" class="btn btn-secondary btn--small btn--icon" aria-label="再来一条">
+                <svg class="btn__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <path d="M21 12a9 9 0 1 1-2.64-6.36" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M21 3v6h-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span class="btn__label">再来一条</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer class="app__footer">
+        <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
+          <span>✨ 随机抽取一条今日宇宙信号</span>
+          <a href="contribute.html" style="color: #c8d1ff; text-decoration: none; font-size: 14px;">📝 投稿信号</a>
+          <a href="admin-login.html" id="adminLink" style="color: #c8d1ff; text-decoration: none; font-size: 14px;">🔍 审核管理</a>
+        </div>
+      </footer>
+    </main>
+
+    <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+    <script src="./script.js"></script>
+  </body>
+  </html>
+
+

@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>审核管理 - 宇宙信号</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles.css">
+    <style>
+      .admin-page {
+        min-height: 100vh;
+        padding: 40px 20px;
+      }
+      
+      .admin-container {
+        max-width: 1000px;
+        margin: 0 auto;
+      }
+      
+      .admin-header {
+        text-align: center;
+        margin-bottom: 40px;
+      }
+      
+      .admin-title {
+        color: #ffffff;
+        font-size: 28px;
+        margin-bottom: 16px;
+      }
+      
+      .back-link {
+        color: #c8d1ff;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: color 0.2s ease;
+      }
+      
+      .back-link:hover {
+        color: #ffffff;
+      }
+      
+      .contributions-list {
+        display: grid;
+        gap: 20px;
+      }
+      
+      .contribution-card {
+        background: rgba(20, 26, 44, 0.75);
+        backdrop-filter: blur(6px);
+        border: 1px solid rgba(196, 206, 255, 0.18);
+        border-radius: 12px;
+        padding: 24px;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+      
+      .contribution-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+      }
+      
+      .contribution-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+      
+      .contribution-status {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+      
+      .status-pending {
+        background: rgba(251, 191, 36, 0.2);
+        color: #fbbf24;
+        border: 1px solid rgba(251, 191, 36, 0.3);
+      }
+      
+      .status-approved {
+        background: rgba(34, 197, 94, 0.2);
+        color: #22c55e;
+        border: 1px solid rgba(34, 197, 94, 0.3);
+      }
+      
+      .status-rejected {
+        background: rgba(239, 68, 68, 0.2);
+        color: #ef4444;
+        border: 1px solid rgba(239, 68, 68, 0.3);
+      }
+      
+      .contribution-content {
+        margin-bottom: 16px;
+      }
+      
+      .contribution-main {
+        color: #ffffff;
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 8px;
+      }
+      
+      .contribution-sec {
+        color: #c8d1ff;
+        font-size: 14px;
+        margin-bottom: 8px;
+      }
+      
+      .contribution-meta {
+        color: #a0a8ff;
+        font-size: 12px;
+        display: flex;
+        gap: 16px;
+        margin-bottom: 16px;
+      }
+      
+      .contribution-actions {
+        display: flex;
+        gap: 12px;
+      }
+      
+      .action-btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      
+      .approve-btn {
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        color: #ffffff;
+      }
+      
+      .approve-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+      }
+      
+      .reject-btn {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: #ffffff;
+      }
+      
+      .reject-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+      }
+      
+      .empty-state {
+        text-align: center;
+        color: #a0a8ff;
+        padding: 60px 20px;
+      }
+      
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 40px;
+      }
+      
+      .stat-card {
+        background: rgba(20, 26, 44, 0.75);
+        backdrop-filter: blur(6px);
+        border: 1px solid rgba(196, 206, 255, 0.18);
+        border-radius: 12px;
+        padding: 24px;
+        text-align: center;
+      }
+      
+      .stat-number {
+        color: #ffffff;
+        font-size: 32px;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+      
+      .stat-label {
+        color: #c8d1ff;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="theme-switcher">
+      <button class="theme-toggle" id="themeToggle">
+        <span class="theme-icon" id="themeIcon">🌌</span>
+        <span id="themeText">宇宙</span>
+      </button>
+    </div>
+    
+    <div class="admin-page">
+      <div class="admin-container">
+        <div class="admin-header">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <a href="index.html" class="back-link">
+              ← 返回主页
+            </a>
+            <button onclick="logout()" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+              退出登录
+            </button>
+          </div>
+          <h1 class="admin-title">审核管理</h1>
+        </div>
+        
+        <div class="stats" id="statsContainer">
+          <!-- 统计信息将通过 JavaScript 动态生成 -->
+        </div>
+        
+        <div class="contributions-list" id="contributionsList">
+          <!-- 投稿列表将通过 JavaScript 动态生成 -->
+        </div>
+        
+        <div class="empty-state" id="emptyState" style="display: none;">
+          <p>暂无待审核的投稿</p>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Theme Management
+      function initTheme() {
+        const savedTheme = localStorage.getItem('theme') || 'universe';
+        setTheme(savedTheme);
+      }
+
+      function setTheme(theme) {
+        const body = document.body;
+        const themeIcon = document.getElementById('themeIcon');
+        const themeText = document.getElementById('themeText');
+        
+        if (theme === 'cat') {
+          body.classList.add('cat-theme');
+          themeIcon.textContent = '🐱';
+          themeText.textContent = '猫猫';
+        } else {
+          body.classList.remove('cat-theme');
+          themeIcon.textContent = '🌌';
+          themeText.textContent = '宇宙';
+        }
+        
+        localStorage.setItem('theme', theme);
+      }
+
+      function toggleTheme() {
+        const currentTheme = localStorage.getItem('theme') || 'universe';
+        const newTheme = currentTheme === 'universe' ? 'cat' : 'universe';
+        setTheme(newTheme);
+      }
+
+      // Check admin permissions
+      function checkAdminPermissions() {
+        const isAdmin = localStorage.getItem('isAdmin') === 'true';
+        if (!isAdmin) {
+          document.body.innerHTML = `
+            <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #0b0f1a;">
+              <div style="text-align: center; color: #ffffff; padding: 40px;">
+                <h1 style="color: #ef4444; margin-bottom: 20px;">🚫 访问被拒绝</h1>
+                <p style="color: #c8d1ff; margin-bottom: 30px;">您没有权限访问审核管理页面</p>
+                <a href="index.html" style="color: #5b7cfa; text-decoration: none; font-weight: 600;">返回主页</a>
+              </div>
+            </div>
+          `;
+          return false;
+        }
+        return true;
+      }
+
+      let contributions = [];
+      
+      function loadContributions() {
+        const stored = localStorage.getItem('contributions');
+        contributions = stored ? JSON.parse(stored) : [];
+        renderStats();
+        renderContributions();
+      }
+      
+      function renderStats() {
+        const total = contributions.length;
+        const pending = contributions.filter(c => c.status === 'pending').length;
+        const approved = contributions.filter(c => c.status === 'approved').length;
+        const rejected = contributions.filter(c => c.status === 'rejected').length;
+        
+        document.getElementById('statsContainer').innerHTML = `
+          <div class="stat-card">
+            <div class="stat-number">${total}</div>
+            <div class="stat-label">总投稿数</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">${pending}</div>
+            <div class="stat-label">待审核</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">${approved}</div>
+            <div class="stat-label">已通过</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">${rejected}</div>
+            <div class="stat-label">已拒绝</div>
+          </div>
+        `;
+      }
+      
+      function renderContributions() {
+        const pendingContributions = contributions.filter(c => c.status === 'pending');
+        
+        if (pendingContributions.length === 0) {
+          document.getElementById('contributionsList').style.display = 'none';
+          document.getElementById('emptyState').style.display = 'block';
+          return;
+        }
+        
+        document.getElementById('contributionsList').style.display = 'grid';
+        document.getElementById('emptyState').style.display = 'none';
+        
+        document.getElementById('contributionsList').innerHTML = pendingContributions.map((contribution, index) => `
+          <div class="contribution-card">
+            <div class="contribution-header">
+              <span class="contribution-status status-${contribution.status}">
+                ${contribution.status === 'pending' ? '待审核' : 
+                  contribution.status === 'approved' ? '已通过' : '已拒绝'}
+              </span>
+            </div>
+            
+            <div class="contribution-content">
+              <div class="contribution-main">${contribution.main}</div>
+              <div class="contribution-sec">${contribution.sec}</div>
+              <div class="contribution-meta">
+                <span>投稿人: ${contribution.from}</span>
+                <span>时间: ${new Date(contribution.timestamp).toLocaleString()}</span>
+              </div>
+            </div>
+            
+            <div class="contribution-actions">
+              <button class="action-btn approve-btn" onclick="approveContribution(${index})">
+                通过
+              </button>
+              <button class="action-btn reject-btn" onclick="rejectContribution(${index})">
+                拒绝
+              </button>
+            </div>
+          </div>
+        `).join('');
+      }
+      
+      function approveContribution(index) {
+        const pendingContributions = contributions.filter(c => c.status === 'pending');
+        const contribution = pendingContributions[index];
+        
+        // 更新状态
+        const contributionIndex = contributions.findIndex(c => 
+          c.main === contribution.main && 
+          c.timestamp === contribution.timestamp
+        );
+        
+        if (contributionIndex !== -1) {
+          contributions[contributionIndex].status = 'approved';
+          contributions[contributionIndex].approvedAt = new Date().toISOString();
+          
+          // 保存到本地存储
+          localStorage.setItem('contributions', JSON.stringify(contributions));
+          
+          // 添加到信号库
+          addToSignals(contribution);
+          
+          // 重新渲染
+          loadContributions();
+        }
+      }
+      
+      function rejectContribution(index) {
+        const pendingContributions = contributions.filter(c => c.status === 'pending');
+        const contribution = pendingContributions[index];
+        
+        // 更新状态
+        const contributionIndex = contributions.findIndex(c => 
+          c.main === contribution.main && 
+          c.timestamp === contribution.timestamp
+        );
+        
+        if (contributionIndex !== -1) {
+          contributions[contributionIndex].status = 'rejected';
+          contributions[contributionIndex].rejectedAt = new Date().toISOString();
+          
+          // 保存到本地存储
+          localStorage.setItem('contributions', JSON.stringify(contributions));
+          
+          // 重新渲染
+          loadContributions();
+        }
+      }
+      
+      function addToSignals(contribution) {
+        // 获取当前信号库
+        const currentSignals = JSON.parse(localStorage.getItem('approvedSignals') || '[]');
+        
+        // 添加新信号
+        currentSignals.push({
+          main: contribution.main,
+          sec: contribution.sec,
+          from: contribution.from
+        });
+        
+        // 保存到本地存储
+        localStorage.setItem('approvedSignals', JSON.stringify(currentSignals));
+      }
+      
+      // 退出登录
+      function logout() {
+        if (confirm('确定要退出登录吗？')) {
+          localStorage.removeItem('isAdmin');
+          window.location.href = 'index.html';
+        }
+      }
+
+      // 页面加载时检查权限并初始化
+      if (checkAdminPermissions()) {
+        loadContributions();
+      }
+
+      // Initialize theme and add event listener
+      initTheme();
+      const themeToggle = document.getElementById('themeToggle');
+      if (themeToggle) {
+        themeToggle.addEventListener('click', toggleTheme);
+      }
+    </script>
+  </body>
+</html>

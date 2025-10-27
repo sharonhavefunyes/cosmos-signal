@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>投稿宇宙信号</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles.css">
+    <style>
+      .contribute-page {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 40px 20px;
+      }
+      
+      .contribute-form {
+        background: rgba(20, 26, 44, 0.75);
+        backdrop-filter: blur(6px);
+        border: 1px solid rgba(196, 206, 255, 0.18);
+        border-radius: 18px;
+        padding: 32px;
+        max-width: 600px;
+        width: 100%;
+        box-shadow: 0 20px 50px rgba(3, 7, 20, 0.5);
+      }
+      
+      .form-group {
+        margin-bottom: 24px;
+      }
+      
+      .form-label {
+        display: block;
+        color: #c8d1ff;
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 8px;
+      }
+      
+      .form-input, .form-textarea {
+        width: 100%;
+        padding: 12px 16px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(196, 206, 255, 0.18);
+        border-radius: 8px;
+        color: #ffffff;
+        font-size: 16px;
+        font-family: inherit;
+        transition: border-color 0.2s ease;
+      }
+      
+      .form-input:focus, .form-textarea:focus {
+        outline: none;
+        border-color: #5b7cfa;
+      }
+      
+      .form-textarea {
+        min-height: 100px;
+        resize: vertical;
+      }
+      
+      .form-input::placeholder, .form-textarea::placeholder {
+        color: rgba(200, 209, 255, 0.6);
+      }
+      
+      .submit-btn {
+        width: 100%;
+        padding: 16px;
+        background: linear-gradient(135deg, #5b7cfa, #8a5bfa);
+        color: #fff;
+        border: none;
+        border-radius: 12px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.08s ease, box-shadow 0.2s ease;
+      }
+      
+      .submit-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 12px 24px rgba(91,124,250,0.35);
+      }
+      
+      .submit-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+      
+      .back-link {
+        color: #c8d1ff;
+        text-decoration: none;
+        margin-bottom: 32px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: color 0.2s ease;
+      }
+      
+      .back-link:hover {
+        color: #ffffff;
+      }
+      
+      .success-message {
+        background: rgba(34, 197, 94, 0.1);
+        border: 1px solid rgba(34, 197, 94, 0.3);
+        color: #22c55e;
+        padding: 16px;
+        border-radius: 8px;
+        margin-bottom: 24px;
+        text-align: center;
+      }
+      
+      .error-message {
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        color: #ef4444;
+        padding: 16px;
+        border-radius: 8px;
+        margin-bottom: 24px;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="theme-switcher">
+      <button class="theme-toggle" id="themeToggle">
+        <span class="theme-icon" id="themeIcon">🌌</span>
+        <span id="themeText">宇宙</span>
+      </button>
+    </div>
+    
+    <div class="contribute-page">
+      <a href="index.html" class="back-link">
+        ← 返回主页
+      </a>
+      
+      <div class="contribute-form">
+        <h1 style="color: #ffffff; text-align: center; margin-bottom: 32px; font-size: 24px;">
+          投稿宇宙信号
+        </h1>
+        
+        <div id="messageContainer"></div>
+        
+        <form id="contributeForm">
+          <div class="form-group">
+            <label for="mainContent" class="form-label">主要信号内容 *</label>
+            <input 
+              type="text" 
+              id="mainContent" 
+              class="form-input" 
+              placeholder="例如：走出你家门，左转三次。"
+              required
+              maxlength="100"
+            >
+          </div>
+          
+          <div class="form-group">
+            <label for="secContent" class="form-label">补充说明 *</label>
+            <textarea 
+              id="secContent" 
+              class="form-textarea" 
+              placeholder="例如：看看第三个左转后出现的第一样让你注意的东西是什么。"
+              required
+              maxlength="200"
+            ></textarea>
+          </div>
+          
+          <div class="form-group">
+            <label for="authorName" class="form-label">投稿人昵称 *</label>
+            <input 
+              type="text" 
+              id="authorName" 
+              class="form-input" 
+              placeholder="例如：宇宙观察者"
+              required
+              maxlength="20"
+            >
+          </div>
+          
+          <button type="submit" class="submit-btn" id="submitBtn">
+            投送到宇宙
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      // Theme Management (shared with main page)
+      function initTheme() {
+        const savedTheme = localStorage.getItem('theme') || 'universe';
+        setTheme(savedTheme);
+      }
+
+      function setTheme(theme) {
+        const body = document.body;
+        const themeIcon = document.getElementById('themeIcon');
+        const themeText = document.getElementById('themeText');
+        
+        if (theme === 'cat') {
+          body.classList.add('cat-theme');
+          themeIcon.textContent = '🐱';
+          themeText.textContent = '猫猫';
+        } else {
+          body.classList.remove('cat-theme');
+          themeIcon.textContent = '🌌';
+          themeText.textContent = '宇宙';
+        }
+        
+        localStorage.setItem('theme', theme);
+      }
+
+      function toggleTheme() {
+        const currentTheme = localStorage.getItem('theme') || 'universe';
+        const newTheme = currentTheme === 'universe' ? 'cat' : 'universe';
+        setTheme(newTheme);
+      }
+
+      const form = document.getElementById('contributeForm');
+      const submitBtn = document.getElementById('submitBtn');
+      const messageContainer = document.getElementById('messageContainer');
+
+      function showMessage(message, type = 'success') {
+        messageContainer.innerHTML = `<div class="${type}-message">${message}</div>`;
+        setTimeout(() => {
+          messageContainer.innerHTML = '';
+        }, 5000);
+      }
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const mainContent = document.getElementById('mainContent').value.trim();
+        const secContent = document.getElementById('secContent').value.trim();
+        const authorName = document.getElementById('authorName').value.trim();
+        
+        if (!mainContent || !secContent || !authorName) {
+          showMessage('请填写所有必填字段', 'error');
+          return;
+        }
+        
+        submitBtn.disabled = true;
+        submitBtn.textContent = '投送中...';
+        
+        try {
+          // 模拟投稿到服务器
+          const contribution = {
+            main: mainContent,
+            sec: secContent,
+            from: authorName,
+            status: 'pending',
+            timestamp: new Date().toISOString()
+          };
+          
+          // 保存到本地存储（实际项目中应该发送到服务器）
+          const contributions = JSON.parse(localStorage.getItem('contributions') || '[]');
+          contributions.push(contribution);
+          localStorage.setItem('contributions', JSON.stringify(contributions));
+          
+          // 模拟网络延迟
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          showMessage('投稿成功！等待宇宙审核中...', 'success');
+          form.reset();
+          
+        } catch (error) {
+          showMessage('投稿失败，请重试', 'error');
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = '投送到宇宙';
+        }
+      });
+
+      // Initialize theme and add event listener
+      initTheme();
+      const themeToggle = document.getElementById('themeToggle');
+      if (themeToggle) {
+        themeToggle.addEventListener('click', toggleTheme);
+      }
+    </script>
+  </body>
+</html>

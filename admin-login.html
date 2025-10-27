@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>管理员登录 - 宇宙信号</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles.css">
+    <style>
+      .login-page {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+      
+      .login-container {
+        background: rgba(20, 26, 44, 0.75);
+        backdrop-filter: blur(6px);
+        border: 1px solid rgba(196, 206, 255, 0.18);
+        border-radius: 18px;
+        padding: 40px;
+        max-width: 400px;
+        width: 100%;
+        box-shadow: 0 20px 50px rgba(3, 7, 20, 0.5);
+      }
+      
+      .login-title {
+        color: #ffffff;
+        font-size: 24px;
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 32px;
+      }
+      
+      .form-group {
+        margin-bottom: 24px;
+      }
+      
+      .form-label {
+        display: block;
+        color: #c8d1ff;
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 8px;
+      }
+      
+      .form-input {
+        width: 100%;
+        padding: 12px 16px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(196, 206, 255, 0.18);
+        border-radius: 8px;
+        color: #ffffff;
+        font-size: 16px;
+        font-family: inherit;
+        transition: border-color 0.2s ease;
+      }
+      
+      .form-input:focus {
+        outline: none;
+        border-color: #5b7cfa;
+      }
+      
+      .form-input::placeholder {
+        color: rgba(200, 209, 255, 0.6);
+      }
+      
+      .login-btn {
+        width: 100%;
+        padding: 16px;
+        background: linear-gradient(135deg, #5b7cfa, #8a5bfa);
+        color: #fff;
+        border: none;
+        border-radius: 12px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.08s ease, box-shadow 0.2s ease;
+        margin-bottom: 20px;
+      }
+      
+      .login-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 12px 24px rgba(91,124,250,0.35);
+      }
+      
+      .login-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+      
+      .back-link {
+        color: #c8d1ff;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: color 0.2s ease;
+        text-align: center;
+        width: 100%;
+        justify-content: center;
+      }
+      
+      .back-link:hover {
+        color: #ffffff;
+      }
+      
+      .error-message {
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        color: #ef4444;
+        padding: 16px;
+        border-radius: 8px;
+        margin-bottom: 24px;
+        text-align: center;
+        display: none;
+      }
+      
+      .success-message {
+        background: rgba(34, 197, 94, 0.1);
+        border: 1px solid rgba(34, 197, 94, 0.3);
+        color: #22c55e;
+        padding: 16px;
+        border-radius: 8px;
+        margin-bottom: 24px;
+        text-align: center;
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="login-page">
+      <div class="login-container">
+        <h1 class="login-title">管理员登录</h1>
+        
+        <div id="errorMessage" class="error-message"></div>
+        <div id="successMessage" class="success-message"></div>
+        
+        <form id="loginForm">
+          <div class="form-group">
+            <label for="adminKey" class="form-label">管理员密钥</label>
+            <input 
+              type="password" 
+              id="adminKey" 
+              class="form-input" 
+              placeholder="请输入管理员密钥"
+              required
+            >
+          </div>
+          
+          <button type="submit" class="login-btn" id="loginBtn">
+            登录
+          </button>
+        </form>
+        
+        <a href="index.html" class="back-link">
+          ← 返回主页
+        </a>
+      </div>
+    </div>
+
+    <script>
+      const form = document.getElementById('loginForm');
+      const loginBtn = document.getElementById('loginBtn');
+      const errorMessage = document.getElementById('errorMessage');
+      const successMessage = document.getElementById('successMessage');
+
+      // 管理员密钥（实际项目中应该从服务器验证）
+      const ADMIN_KEY = 'cosmic_admin_2024';
+
+      function showError(message) {
+        errorMessage.textContent = message;
+        errorMessage.style.display = 'block';
+        successMessage.style.display = 'none';
+      }
+
+      function showSuccess(message) {
+        successMessage.textContent = message;
+        successMessage.style.display = 'block';
+        errorMessage.style.display = 'none';
+      }
+
+      function hideMessages() {
+        errorMessage.style.display = 'none';
+        successMessage.style.display = 'none';
+      }
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        hideMessages();
+        
+        const adminKey = document.getElementById('adminKey').value.trim();
+        
+        if (!adminKey) {
+          showError('请输入管理员密钥');
+          return;
+        }
+        
+        loginBtn.disabled = true;
+        loginBtn.textContent = '验证中...';
+        
+        try {
+          // 模拟网络延迟
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          if (adminKey === ADMIN_KEY) {
+            // 设置管理员权限
+            localStorage.setItem('isAdmin', 'true');
+            showSuccess('登录成功！正在跳转...');
+            
+            // 延迟跳转到审核页面
+            setTimeout(() => {
+              window.location.href = 'admin.html';
+            }, 1500);
+          } else {
+            showError('管理员密钥错误');
+          }
+          
+        } catch (error) {
+          showError('登录失败，请重试');
+        } finally {
+          loginBtn.disabled = false;
+          loginBtn.textContent = '登录';
+        }
+      });
+
+      // 如果已经是管理员，直接跳转
+      if (localStorage.getItem('isAdmin') === 'true') {
+        window.location.href = 'admin.html';
+      }
+    </script>
+  </body>
+</html>
