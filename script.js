@@ -12,6 +12,7 @@
   const RECEIVE_KEY = 'cosmic_receive_used_date';
   const AGAIN_KEY = 'cosmic_again_used_date';
   const LAST_SEEN_DATE_KEY = 'cosmic_last_seen_date';
+  const DRAWN_SIGNALS_KEY = 'cosmic_drawn_signals'; // 存储用户已抽取的信号ID列表
   const DEV_RESET_ENABLED = true; // flip to false for production if needed
 
   function getTodayKey() {
@@ -146,13 +147,237 @@
     }
   }
 
+  /**
+   * ============================================================
+   * 去重功能实现逻辑说明
+   * ============================================================
+   * 
+   * 【核心目标】
+   * 确保同一个用户不会抽到重复的内容，直到所有内容都被抽取过一遍后重新开始
+   * 
+   * 【实现机制】
+   * 
+   * 1. 唯一标识生成
+   *    - 每个信号通过 main + sec + from 三个字段组合生成唯一ID
+   *    - 格式: "main内容|sec内容|from来源"
+   *    - 只要这三个字段相同，就视为同一个信号
+   * 
+   * 2. 已抽取记录存储
+   *    - 使用 localStorage 存储已抽取信号的ID列表
+   *    - 存储键: 'cosmic_drawn_signals'
+   *    - 存储格式: JSON数组，例如: ["信号1ID", "信号2ID", ...]
+   *    - 持久化保存，页面刷新后依然有效
+   * 
+   * 3. 过滤逻辑
+   *    - 每次抽取时，先从所有信号中过滤出未在已抽取列表中的信号
+   *    - 从可用信号中随机选择一个
+   *    - 立即标记为已抽取（防止竞态条件）
+   * 
+   * 4. 自动重置机制
+   *    - 当所有信号都被抽取过（availableSignals.length === 0）时
+   *    - 自动清除已抽取记录，重新开始新一轮
+   *    - 用户可以重新抽取所有信号
+   * 
+   * 【技术细节】
+   * 
+   * - 存储位置: localStorage（浏览器本地存储）
+   * - 存储容量: 理论上可存储数千个信号ID（每个ID约50-200字符）
+   * - 性能考虑: 
+   *   * 每次抽卡需要读取一次 localStorage
+   *   * 每次标记需要写入一次 localStorage
+   *   * 过滤操作使用 Array.filter()，O(n) 时间复杂度
+   * 
+   * - 竞态条件防护:
+   *   * 在 getRandomSignal() 中立即标记，而不是在 showCard() 中
+   *   * 确保信号在被选中时就被锁定，避免重复
+   * 
+   * 【使用场景】
+   * - 用户第一次抽卡: 从所有信号中随机选择
+   * - 用户后续抽卡: 从未抽取的信号中选择
+   * - 全部抽完后: 自动重置，可以重新抽取所有信号
+   * 
+   * 【注意事项】
+   * - 已抽取记录不会自动清除（除非全部抽完或手动重置）
+   * - 清除浏览器数据会导致记录丢失
+   * - 开发调试可使用 Alt+R 或双击页脚重置
+   * 
+   * ============================================================
+   */
+
+  /**
+   * 去重功能核心实现 - 生成信号的唯一标识符
+   * 
+   * 实现原理：
+   * 通过组合信号的三个关键字段（main、sec、from）生成唯一ID
+   * 使用 "|" 作为分隔符，确保不同信号有不同的ID
+   * 
+   * 重要：确保信号对象字段存在且为字符串，避免undefined导致的ID不一致
+   * 
+   * @param {Object} signal - 信号对象，包含 main、sec、from 字段
+   * @returns {string} 信号的唯一标识符，格式: "main内容|sec内容|from来源"
+   * 
+   * @example
+   * getSignalId({main: "左转", sec: "看看", from: "universe"})
+   * // 返回: "左转|看看|universe"
+   */
+  function getSignalId(signal) {
+    // 确保所有字段都存在且为字符串，避免undefined导致ID不一致
+    const main = String(signal.main || '').trim();
+    const sec = String(signal.sec || '').trim();
+    const from = String(signal.from || '').trim();
+    return `${main}|${sec}|${from}`;
+  }
+
+  /**
+   * 去重功能 - 获取用户已抽取的信号ID列表
+   * 
+   * 实现原理：
+   * 从 localStorage 中读取已抽取信号的ID列表
+   * 如果不存在或解析失败，返回空数组
+   * 
+   * @returns {Array<string>} 已抽取信号的ID数组
+   */
+  function getDrawnSignals() {
+    try {
+      return JSON.parse(localStorage.getItem(DRAWN_SIGNALS_KEY) || '[]');
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /**
+   * 去重功能 - 标记信号为已抽取
+   * 
+   * 实现原理：
+   * 1. 获取当前已抽取信号列表
+   * 2. 生成当前信号的唯一ID
+   * 3. 如果ID不在列表中，则添加到列表并保存到 localStorage
+   * 4. 如果ID已在列表中，输出警告（理论上不应该发生）
+   * 
+   * 存储机制：
+   * - 使用 localStorage 持久化存储，刷新页面后依然有效
+   * - 只有在用户清除浏览器数据或调用重置函数时才会清除
+   * 
+   * @param {Object} signal - 要标记的信号对象
+   */
+  function markSignalAsDrawn(signal) {
+    const drawnSignals = getDrawnSignals();
+    const signalId = getSignalId(signal);
+    
+    // 调试：检查信号ID是否已存在
+    if (drawnSignals.includes(signalId)) {
+      console.warn('⚠️ 警告: 尝试标记已存在的信号:', signalId);
+      console.warn('信号内容:', signal);
+      console.warn('当前已抽取列表:', drawnSignals);
+      return; // 如果已存在，直接返回，不重复添加
+    }
+    
+    // 添加到列表并保存
+    drawnSignals.push(signalId);
+    localStorage.setItem(DRAWN_SIGNALS_KEY, JSON.stringify(drawnSignals));
+    console.log('✅ 已标记信号:', signalId, '当前已抽取数:', drawnSignals.length);
+  }
+
+  /**
+   * 去重功能 - 重置已抽取信号列表
+   * 
+   * 实现原理：
+   * 当所有信号都已被抽取过时，清除 localStorage 中的记录
+   * 这样下一轮抽卡就可以从所有信号中重新开始抽取
+   * 
+   * 触发时机：
+   * - 在 getRandomSignal() 中检测到 availableSignals.length === 0 时自动调用
+   * - 在开发重置功能中手动调用（Alt+R 或双击页脚）
+   */
+  function resetDrawnSignals() {
+    localStorage.removeItem(DRAWN_SIGNALS_KEY);
+  }
+
+  /**
+   * 去重功能核心逻辑 - 获取未抽取过的随机信号
+   * 
+   * 实现原理（完整流程）：
+   * 
+   * 1. 【获取已抽取列表】
+   *    从 localStorage 读取用户已抽取的信号ID列表
+   * 
+   * 2. 【过滤可用信号】
+   *    遍历所有信号，过滤出未在已抽取列表中的信号
+   *    通过比较信号的唯一ID来判断是否已抽取
+   * 
+   * 3. 【检查是否全部抽完】
+   *    如果可用信号数为0，说明所有信号都已抽取过
+   *    此时重置已抽取列表，重新开始新一轮
+   * 
+   * 4. 【随机选择】
+   *    从可用信号列表中随机选择一个信号
+   * 
+   * 5. 【立即标记】（关键！防止竞态条件）
+   *    在返回信号之前就立即标记为已抽取
+   *    这样可以避免快速连续点击导致重复抽取的问题
+   * 
+   * 竞态条件防护：
+   * - 如果标记操作放在 showCard() 中，快速点击可能在同一时刻多次调用 getRandomSignal()
+   * - 此时可能获取到同一个信号，导致重复
+   * - 解决方案：在获取信号后立即标记，确保信号在被选中时就已被记录
+   * 
+   * @returns {Object} 一个未被用户抽取过的随机信号对象
+   */
   function getRandomSignal() {
-    const index = Math.floor(Math.random() * signals.length);
-    return signals[index];
+    // 步骤1: 获取已抽取的信号ID列表
+    const drawnSignals = getDrawnSignals();
+    console.log('📊 当前已抽取信号数:', drawnSignals.length, '总信号数:', signals.length);
+    
+    // 步骤2: 过滤出所有未抽取的信号
+    // 遍历所有信号，通过比较唯一ID来判断是否在已抽取列表中
+    const availableSignals = signals.filter(signal => {
+      const signalId = getSignalId(signal);
+      const isDrawn = drawnSignals.includes(signalId);
+      
+      // 调试：如果发现重复，输出详细信息
+      if (isDrawn) {
+        console.warn('🔍 发现已抽取的信号:', signalId);
+        console.warn('  信号内容:', signal);
+      }
+      
+      return !isDrawn;
+    });
+
+    console.log('✅ 可用信号数:', availableSignals.length);
+
+    // 步骤3: 检查是否所有信号都已抽取过
+    if (availableSignals.length === 0) {
+      // 重置已抽取列表，开始新一轮
+      resetDrawnSignals();
+      console.log('🔄 所有信号都已抽取过，重置列表');
+      // 递归调用自身，重新从所有信号中选择
+      return getRandomSignal();
+    }
+
+    // 步骤4: 从可用信号中随机选择一个
+    const index = Math.floor(Math.random() * availableSignals.length);
+    const selectedSignal = availableSignals[index];
+    const selectedSignalId = getSignalId(selectedSignal);
+    
+    console.log('🎲 选中信号ID:', selectedSignalId);
+    console.log('🎲 选中信号内容:', selectedSignal);
+    
+    // 步骤5: 立即标记为已抽取（关键步骤！）
+    // 在返回信号之前就标记，防止竞态条件
+    markSignalAsDrawn(selectedSignal);
+    
+    // 双重检查：确认标记成功
+    const afterMark = getDrawnSignals();
+    if (!afterMark.includes(selectedSignalId)) {
+      console.error('❌ 错误: 标记失败！信号ID:', selectedSignalId);
+    }
+    
+    return selectedSignal;
   }
 
   function showCard() {
     const s = getRandomSignal();
+    
     cardMain.textContent = s.main.startsWith('你可以试着') ? s.main : `你可以试着：${s.main}`;
     cardSub.textContent = s.sec || '或许，这就是今天的信号';
     cardFrom.textContent = s.from === 'universe' ? '来自宇宙' : `来自 ${s.from}`;
@@ -204,9 +429,56 @@
   function devResetDailyQuota() {
     localStorage.removeItem(RECEIVE_KEY);
     localStorage.removeItem(AGAIN_KEY);
+    resetDrawnSignals();
     updateButtonStates();
-    showToast('已重置今日次数');
+    showToast('已重置今日次数和已抽取记录');
   }
+
+  /**
+   * 调试辅助函数 - 查看已抽取的信号列表
+   * 在浏览器控制台可以直接输入: debugDrawnSignals() 或 window.debugDrawnSignals()
+   */
+  function debugDrawnSignals() {
+    const drawnSignals = getDrawnSignals();
+    console.log('📋 已抽取的信号ID列表 (共', drawnSignals.length, '条):');
+    drawnSignals.forEach((id, index) => {
+      console.log(`${index + 1}. ${id}`);
+    });
+    
+    // 尝试匹配对应的信号内容
+    console.log('\n📋 已抽取的信号内容:');
+    drawnSignals.forEach((id, index) => {
+      const matchedSignal = signals.find(s => getSignalId(s) === id);
+      if (matchedSignal) {
+        console.log(`${index + 1}. ${matchedSignal.main} | ${matchedSignal.sec}`);
+      } else {
+        console.log(`${index + 1}. [未找到匹配的信号] ${id}`);
+      }
+    });
+    
+    return drawnSignals;
+  }
+  
+  // 同时添加到window对象，方便在控制台调用
+  window.debugDrawnSignals = debugDrawnSignals;
+  
+  // 页面加载后自动输出已抽取信息（方便调试）
+  console.log('🔧 调试工具已加载！');
+  console.log('📝 在控制台输入以下命令查看信息:');
+  console.log('   debugDrawnSignals() - 查看已抽取的信号');
+  console.log('   或者直接: localStorage.getItem("cosmic_drawn_signals") - 查看原始数据');
+
+  /**
+   * 调试辅助函数 - 验证当前信号的ID
+   * 在浏览器控制台输入: window.debugSignalId(signal) 可以验证
+   */
+  window.debugSignalId = function(signal) {
+    const signalId = getSignalId(signal);
+    console.log('🔍 信号ID:', signalId);
+    console.log('🔍 信号内容:', signal);
+    console.log('🔍 是否已抽取:', getDrawnSignals().includes(signalId));
+    return signalId;
+  };
 
 
   receiveBtn.addEventListener('click', handleReceive);
