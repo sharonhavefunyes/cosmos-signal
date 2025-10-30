@@ -9,9 +9,6 @@
     { "src": "script.js", "use": "@vercel/static" },
     { "src": "signals.csv", "use": "@vercel/static" }
   ],
-  "routes": [
-    { "src": "/(.*)", "dest": "/$1" }
-  ],
   "headers": [
     {
       "source": "/signals.csv",
